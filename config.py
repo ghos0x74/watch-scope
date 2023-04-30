@@ -1,4 +1,10 @@
+
 mongo = "mongodb://localhost:27017/"
 db = "platforms"
-Webhook = ""
-Chat_id = ""
+
+silent = False
+update = False
+discord = True
+telegram = False
+webhook = "<Discord Webhook>or<Telegram bot TOKEN>"
+chat_id = "<Telegram Chat-id>"

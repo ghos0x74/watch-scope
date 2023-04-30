@@ -1,10 +1,15 @@
 from discord_webhook import DiscordWebhook, DiscordEmbed
 import config
 import requests, pymongo, time, argparse
-import urllib.parse
+import urllib.parse,sys
 
-myclient = pymongo.MongoClient(config.mongo)
-mydb = myclient[config.db]
+def existdb(args,myclient):
+    logger(args.silent,"[+] Checking for Database existence.")
+    dbnames = myclient.list_database_names()
+    if config.db in dbnames:
+        logger(args.silent,"[+] Database Found.")
+        return True
+    logger(args.silent,"[-] Database Not Found.")
 
 class Program:
     def __init__(self,name:str,data:object):
@@ -22,15 +27,18 @@ def listScope(scopes):
         scp = scp + s + "\n"
     return scp
 
-def updateDatabase(args,program):
-    for key in program.keys():
-        logger(args.silent,"[+] Updating {} Database.".format(key))
-        mycol = mydb[key]
-        logger(args.silent,"[+] Removing previous collection.")
-        mycol.drop()
-        mycol.insert_many(program[key])
-        logger(args.silent,"[+] {} Database Updated.".format(key))
-
+def updateDatabase(args,program,mydb):
+    try:
+        for key in program.keys():
+            logger(args.silent,"[+] Updating {} Database.".format(key))
+            mycol = mydb[key]
+            logger(args.silent,"[+] Removing previous collection.")
+            mycol.drop()
+            mycol.insert_many(program[key])
+            logger(args.silent,"[+] {} Database Updated.".format(key))
+    except Exception as e:
+        logger(args.silent,"[-] {}".format(e))
+        exit(1)
 def push(args,platform,data,scopes=None,Type=None):
 
     if scopes:
@@ -74,7 +82,8 @@ def push(args,platform,data,scopes=None,Type=None):
         requests.get(f"https://api.telegram.org/bot{webhook}/sendmessage?chat_id={chat_id}&text={message}")
         time.sleep(10)
         if requests.status_codes != 200:
-            logger(args.silent,"[-] Cannot send to Telegram")
+            logger(args.silent,"[-] Cannot send to Telegram check chat_id and Webhook")
+            exit(1)
 
 def updateProgram(args,mycol,platform,data):
     logger(args.silent,"[+] Adding {} [{}] : to Database.".format(data["name"],platform))
@@ -84,27 +93,32 @@ def updateProgram(args,mycol,platform,data):
         push(args,platform,data,data["in_scope"])
     except Exception as e:
         logger(args.silent,"[-] {}".format(e))
+        exit(1)
 
 def updateScope(args,mycol,platform,data,scopes,Type):
+    try:
+        if Type == "in":
+            logger(args.silent,"[+] Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform))
+            for scope in scopes:
+                update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
+            push(args,platform,data,scopes,"in")
 
-    if Type == "in":
-        logger(args.silent,"[+] Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform))
-        for scope in scopes:
-            update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
-        push(args,platform,data,scopes,"in")
+        elif Type == "out":
+            logger(args.silent,"[+] Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform))
+            for scope in scopes:
+                update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":str(scope)}})
+            push(args,platform,data,scopes,"out")
 
-    elif Type == "out":
-        logger(args.silent,"[+] Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform))
-        for scope in scopes:
-            update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":str(scope)}})
-        push(args,platform,data,scopes,"out")
-
-def check_old_data(args,platform,Program):
+    except Exception as e:
+        logger(args.silent,"[-] {}".format(e))
+        
+def check_old_data(args,platform,Program,mydb):
 
     new_in_scopes = []
     new_out_of_scopes = []
 
     try:
+        updated = False
         mycol = mydb[platform]
         for data in Program[platform]:
             program = mycol.find_one({"handle":data["handle"]})
@@ -119,15 +133,20 @@ def check_old_data(args,platform,Program):
                         new_in_scopes.append(new_in_scope)
                 if new_in_scopes != []:
                     updateScope(args,mycol,platform,data,new_in_scopes,"in")
+                    updated == True
                 for new_out_of_scope in old_inscopes:
                     if new_out_of_scope not in data["in_scope"]:
                         logger(args.silent,"[+] New out_of_Scope founds! on {} : {}".format(platform,new_out_of_scope))
                         new_out_of_scopes.append(new_out_of_scope)
                 if new_out_of_scopes != []:
                     updateScope(args,mycol,platform,data,new_out_of_scopes,"out")
+                    updated == True
+        if updated == False:
+            logger(args.silent,"[+] No changes were found in {}. ".format(platform))
 
     except Exception as e:
         logger(args.silent,"[-] {}".format(e))
+        exit(1)
 
 
 def getPlatforms(args,platform):
@@ -140,6 +159,7 @@ def getPlatforms(args,platform):
             logger(args.silent,"[+] got the JSON Object.")
         except Exception as e:
             logger(args.silent,"[-] {}".format(e))
+            exit(1)
         logger(args.silent,"[+] Cleaning JSON Object.")
         programs = []
         for program in res:
@@ -207,6 +227,7 @@ def getPlatforms(args,platform):
             return {platform.name:programs}
         except Exception as e:
             logger(args.silent,"[-] {}".format(e))
+            exit(1)
 
     elif platform.name == "yeswehack":
         logger(args.silent,"[+] Checking {}".format(platform.name))
@@ -216,6 +237,7 @@ def getPlatforms(args,platform):
             logger(args.silent,"[+] got the JSON Object.")
         except Exception as e:
             logger(args.silent,"[-] {}".format(e))
+            exit(1)
         logger(args.silent,"[+] Cleaning JSON Object.")
         programs = []
         for program in res:
@@ -242,6 +264,7 @@ def getPlatforms(args,platform):
             logger(args.silent,"[+] got the JSON Object.")
         except Exception as e:
             logger(args.silent,"[-] {}".format(e))
+            exit(1)
         programs = []
         for program in res:
             platform.data = {}
@@ -266,7 +289,7 @@ def getPlatforms(args,platform):
         return {platform.name:programs}
 
 def main():
-
+    
     parser = argparse.ArgumentParser(description='Watch scope')
     parser.add_argument("--silent",action="store_true",help="Turn on Logging.")
     parser.add_argument("--update",action="store_true",help="Update Database.")
@@ -276,17 +299,30 @@ def main():
     parser.add_argument("--chat_id",help="telegram chat_id")
     args = parser.parse_args()
 
-    if args.update:
+    if not len(sys.argv) > 1:
+        args.silent = config.silent        
+        args.update = config.update
+        args.discord = config.discord
+        args.telegram = config.telegram
+        args.webhook = config.webhook
+        args.chat_id = config.chat_id
+
+    myclient = pymongo.MongoClient(config.mongo)
+    is_exist = existdb(args,myclient)
+    mydb = myclient[config.db]
+
+    if args.update or is_exist != True:
         for p in ["hackerone","bugcrowd","yeswehack","intigriti"]:
             data = Program(p,{})
             program = getPlatforms(args,data)
-            updateDatabase(args,program)
+            updateDatabase(args,program,mydb)
+            check_old_data(args,p,program,mydb)
 
     elif args.telegram or args.discord:
         for p in ["hackerone","bugcrowd","yeswehack","intigriti"]:
             data = Program(p,{})
             program = getPlatforms(args,data)
-            check_old_data(args,p,program)
+            check_old_data(args,p,program,mydb)
 
 if __name__ == "__main__":
     main()
