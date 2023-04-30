@@ -3,6 +3,7 @@ This is a tool for crawling bug bounty platforms and watch programs scopes, if t
 
 ## Installation
 
+-Note : this program works with mongodb so you need to install it.
 clone the repository and install required packages by using this commands.
 ``` bash
 git clone https://github.com/ghos0x74/watch-scope.git
