@@ -1,6 +1,7 @@
 from discord_webhook import DiscordWebhook, DiscordEmbed
 import config
 import requests, pymongo, time, argparse
+import urllib.parse
 
 myclient = pymongo.MongoClient(config.mongo)
 mydb = myclient[config.db]
@@ -15,6 +16,12 @@ def logger(silent,message):
     if silent != True:
         print(message)
 
+def listScope(scopes):
+    scp = ""
+    for s in scopes:
+        scp = scp + s + "\n"
+    return scp
+
 def updateDatabase(args,program):
     for key in program.keys():
         logger(args.silent,"[+] Updating {} Database.".format(key))
@@ -26,22 +33,24 @@ def updateDatabase(args,program):
 
 def push(args,platform,data,scopes=None,Type=None):
 
+    if scopes:
+        scp = listScope(scopes)
+
+    if Type == "out":
+        title = "New out of Scope"
+    elif Type == "in":
+        title = "New Scope Found."
+    else:
+        title = "New Program Found!"
+
     if args.discord:
 
         webhook = DiscordWebhook(args.webhook,rate_limit_retry=True)
 
-        if scopes:
-            scp = ""
-            for s in scopes:
-                scp = scp + s + "\n"
-        if Type == "out":
-            embed = DiscordEmbed(title="New out of Scope.", description='```{}```'.format(scp), color='000000')
-        elif Type == "in":
-            embed = DiscordEmbed(title="New Scope Found.", description='```{}```'.format(scp), color='000000')
-        else:
-            embed = DiscordEmbed(title="New Program Found!", description='```{}```'.format(scp), color='000000')
         if len(data["thumbnail"]) > 256:
             data["thumbnail"] = "https://profile-photos.hackerone-user-content.com/variants/uzeafiqfy90rlkk6zzqdrfeminnl/1449098d8043bd63faa337ade3089242211e8d4c2ef8f32c232731e8ff0c3adb"
+
+        embed = DiscordEmbed(title=title, description='```{}```'.format(scp), color='000000')
         embed.set_thumbnail(url=data["thumbnail"])
         embed.add_embed_field(name='Platform', value=platform,inline=False)
         embed.add_embed_field(name='Name', value=data["name"],inline=False)
@@ -58,7 +67,14 @@ def push(args,platform,data,scopes=None,Type=None):
             exit(1)
         logger(args.silent,"[+] Sent to discord.")
 
-
+    if args.telegram:
+        webhook = args.webhook
+        chat_id = args.chat_id
+        message = urllib.parse.quote_plus(f'{title}\n———————————————\n🎯Scopes: {scp}———————————————\n> Platform {platform}\n———————————————\n> Name: {data["name"]}\n———————————————\n> Type {data["type"]}\n———————————————\nURL: {data["url"]}')
+        requests.get(f"https://api.telegram.org/bot{webhook}/sendmessage?chat_id={chat_id}&text={message}")
+        time.sleep(10)
+        if requests.status_codes != 200:
+            logger(args.silent,"[-] Cannot send to Telegram")
 
 def updateProgram(args,mycol,platform,data):
     logger(args.silent,"[+] Adding {} [{}] : to Database.".format(data["name"],platform))
@@ -257,6 +273,7 @@ def main():
     parser.add_argument("-dc","--telegram",action="store_true",help="set sending method to telegram")
     parser.add_argument("-tel","--discord",action="store_true",help="set sending method to discord")
     parser.add_argument("--webhook",help="telegram(BOT-TOKEN) or discord webhook link")
+    parser.add_argument("--chat_id",help="telegram chat_id")
     args = parser.parse_args()
 
     if args.update:
