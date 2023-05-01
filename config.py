@@ -5,6 +5,6 @@ silent = False
 update = False
 discord = True
 telegram = False
-webhook = ""
+webhook = "<Your Telegram Bot TOKEN or Discord Webhook>"
 chat_id = 11111111 #<Telegram Chat-id>
 platform = "all"
