@@ -22,12 +22,12 @@ python3 main.py
  
  send to discord
  ```bash
- python3 main.py -w <your discord webhook> --discord
+ python3 main.py -p all -w <your discord webhook> --discord
  ```
  ```bash
- python3 main.py -w <your bot TOKEN> -id <your chat-id> --telegram
+ python3 main.py -p all -w <your bot TOKEN> -id <your chat-id> --telegram
  ```
  or if you just want to update database
  ```bash
- python3 main.py --update
+ python3 main.py -p all --update
  ```

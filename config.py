@@ -1,10 +1,10 @@
-
-mongo = "mongodb://localhost:27017/"
+mongo_port = "27017"
+mongo_host = "localhost"
 db = "platforms"
-
 silent = False
 update = False
 discord = True
 telegram = False
 webhook = "<Discord Webhook>or<Telegram bot TOKEN>"
 chat_id = 11111111 #<Telegram Chat-id>
+platform = "all"

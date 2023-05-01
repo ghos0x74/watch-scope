@@ -297,6 +297,7 @@ def main():
     parser.add_argument("--discord",action="store_true",help="set sending method to discord")
     parser.add_argument("-w","--webhook",help="telegram(BOT-TOKEN) or discord webhook link")
     parser.add_argument("-id","--chat_id",help="telegram chat_id")
+    parser.add_argument("-p","--platform",help="bugbounty platform names (ex: hackerone,bugcrowd). default: all",default="all",required=True)
     args = parser.parse_args()
 
     if not len(sys.argv) > 1:
@@ -306,20 +307,26 @@ def main():
         args.telegram = config.telegram
         args.webhook = config.webhook
         args.chat_id = config.chat_id
+        args.platform = config.platform
 
-    myclient = pymongo.MongoClient(config.mongo)
+    myclient = pymongo.MongoClient("mongodb://{}:{}/".format(config.mongo_host,config.mongo_port))
     is_exist = existdb(args,myclient)
     mydb = myclient[config.db]
 
+    if args.platform == "all":
+        platforms = ["hackerone","bugcrowd","yeswehack","intigriti"]
+    else:
+        platforms = args.platform.split(",")
+
     if args.update or is_exist != True:
-        for p in ["hackerone","bugcrowd","yeswehack","intigriti"]:
+        for p in platforms:
             data = Program(p,{})
             program = getPlatforms(args,data)
             updateDatabase(args,program,mydb)
             check_old_data(args,p,program,mydb)
 
     elif args.telegram or args.discord:
-        for p in ["hackerone","bugcrowd","yeswehack","intigriti"]:
+        for p in platforms:
             data = Program(p,{})
             program = getPlatforms(args,data)
             check_old_data(args,p,program,mydb)
