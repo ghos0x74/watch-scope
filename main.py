@@ -293,10 +293,10 @@ def main():
     parser = argparse.ArgumentParser(description='Watch scope')
     parser.add_argument("--silent",action="store_true",help="Turn on Logging.")
     parser.add_argument("--update",action="store_true",help="Update Database.")
-    parser.add_argument("-dc","--telegram",action="store_true",help="set sending method to telegram")
-    parser.add_argument("-tel","--discord",action="store_true",help="set sending method to discord")
-    parser.add_argument("--webhook",help="telegram(BOT-TOKEN) or discord webhook link")
-    parser.add_argument("--chat_id",help="telegram chat_id")
+    parser.add_argument("--telegram",action="store_true",help="set sending method to telegram")
+    parser.add_argument("--discord",action="store_true",help="set sending method to discord")
+    parser.add_argument("-w","--webhook",help="telegram(BOT-TOKEN) or discord webhook link")
+    parser.add_argument("-id","--chat_id",help="telegram chat_id")
     args = parser.parse_args()
 
     if not len(sys.argv) > 1:

@@ -7,4 +7,4 @@ update = False
 discord = True
 telegram = False
 webhook = "<Discord Webhook>or<Telegram bot TOKEN>"
-chat_id = "<Telegram Chat-id>"
+chat_id = 11111111 #<Telegram Chat-id>
