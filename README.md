@@ -20,10 +20,11 @@ python3 main.py
  ```
  ### Method 2 :
  
- send to discord
+ send to Discord
  ```bash
  python3 main.py -p all -w <your discord webhook> --discord
  ```
+ send to Telegram
  ```bash
  python3 main.py -p all -w <your bot TOKEN> -id <your chat-id> --telegram
  ```
