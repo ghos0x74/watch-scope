@@ -24,7 +24,7 @@ def logger(silent,message,TYPE):
             print(Fore.LIGHTCYAN_EX+"["+Fore.LIGHTYELLOW_EX+"✓"+Fore.LIGHTCYAN_EX+"] "+Fore.LIGHTCYAN_EX+message+Fore.RESET)
         elif TYPE == "pending":
             print(Fore.LIGHTCYAN_EX+"["+Fore.LIGHTYELLOW_EX+"*"+Fore.LIGHTCYAN_EX+"] "+Fore.LIGHTMAGENTA_EX+message+Fore.RESET)
-
+    time.sleep(0.30)
 def listScope(scopes):
     scp = ""
     for s in scopes:
@@ -104,6 +104,10 @@ def updateScope(args,mycol,platform,data,scopes,Type,old=None):
     if Type == "in":
         logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
         for scope in scopes:
+            if scope in old:
+                old.remove(scope)
+        update = mycol.update_one({"handle":data["handle"]},{"$set":{"out_of_scope":old}})
+        for scope in scopes:
             update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
         push(args,platform,data,scopes,"in")
 
@@ -135,12 +139,13 @@ def check_old_data(args,platform,Program,mydb):
                 updateProgram(args,mycol,platform,data)
             elif program != None:
                 old_inscopes = mycol.find_one({"handle":data["handle"]})["in_scope"]
+                old_out_of_scopes = mycol.find_one({"handle":data["handle"]})["out_of_scope"]
                 for new_in_scope in data["in_scope"]:
                     if new_in_scope not in old_inscopes:
                         logger(args.silent,"New in_Scope founds! on {} : {}".format(platform,new_in_scope),TYPE="success")
                         new_in_scopes.append(new_in_scope)
                 if new_in_scopes != []:
-                    updateScope(args,mycol,platform,data,new_in_scopes,"in")
+                    updateScope(args,mycol,platform,data,new_in_scopes,"in",old_out_of_scopes)
                     new_in_scopes = []
                     updated == True
                 for new_out_of_scope in old_inscopes:
