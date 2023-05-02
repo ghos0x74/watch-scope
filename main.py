@@ -99,7 +99,7 @@ def updateProgram(args,mycol,platform,data):
         logger(args.silent,"{}".format(e),TYPE="error")
         exit(1)
 
-def updateScope(args,mycol,platform,data,scopes,Type,old=None):
+def updateScope(args,mycol,platform,data,scopes,Type,old):
     #try:
     if Type == "in":
         logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
@@ -108,7 +108,7 @@ def updateScope(args,mycol,platform,data,scopes,Type,old=None):
                 old.remove(scope)
         update = mycol.update_one({"handle":data["handle"]},{"$set":{"out_of_scope":old}})
         for scope in scopes:
-            update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
+            update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":scope}})
         push(args,platform,data,scopes,"in")
 
     elif Type == "out":
@@ -125,37 +125,47 @@ def updateScope(args,mycol,platform,data,scopes,Type,old=None):
     #    logger(args.silent,"{}".format(e),TYPE="error")
         
 def check_old_data(args,platform,Program,mydb):
-
-    new_in_scopes = []
-    new_out_of_scopes = []
-
     try:
+        new_in_scopes = []
+        new_out_of_scopes = []
         updated = False
         mycol = mydb[platform]
+
         for data in Program[platform]:
             program = mycol.find_one({"handle":data["handle"]})
             if program == None:
                 logger(args.silent,"Program Not found in Database.",TYPE="error")
                 updateProgram(args,mycol,platform,data)
+                updated = True
+
             elif program != None:
+
                 old_inscopes = mycol.find_one({"handle":data["handle"]})["in_scope"]
                 old_out_of_scopes = mycol.find_one({"handle":data["handle"]})["out_of_scope"]
+
                 for new_in_scope in data["in_scope"]:
                     if new_in_scope not in old_inscopes:
                         logger(args.silent,"New in_Scope founds! on {} : {}".format(platform,new_in_scope),TYPE="success")
                         new_in_scopes.append(new_in_scope)
+
                 if new_in_scopes != []:
                     updateScope(args,mycol,platform,data,new_in_scopes,"in",old_out_of_scopes)
                     new_in_scopes = []
                     updated == True
+                    
+                old_inscopes = mycol.find_one({"handle":data["handle"]})["in_scope"]
+                old_out_of_scopes = mycol.find_one({"handle":data["handle"]})["out_of_scope"]
+
                 for new_out_of_scope in old_inscopes:
                     if new_out_of_scope not in data["in_scope"]:
                         logger(args.silent,"New out_of_Scope founds! on {} : {}".format(platform,new_out_of_scope),TYPE="success")
                         new_out_of_scopes.append(new_out_of_scope)
+
                 if new_out_of_scopes != []:
                     updateScope(args,mycol,platform,data,new_out_of_scopes,"out",old_inscopes)
                     new_out_of_scopes = []
                     updated == True
+
 
         if updated == False:
             logger(args.silent,"No changes were found in {}. ".format(platform),TYPE="success")
