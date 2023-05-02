@@ -73,7 +73,7 @@ def push(args,platform,data,scopes=None,Type=None):
         embed.set_timestamp()
         webhook.add_embed(embed)
         response = webhook.execute()
-        time.sleep(20)
+        time.sleep(5)
         if response.status_code != 200:
             logger(args.silent,"Cannot send to discord",TYPE="error")
             exit(1)
@@ -84,7 +84,7 @@ def push(args,platform,data,scopes=None,Type=None):
         chat_id = args.chat_id
         message = urllib.parse.quote_plus(f'{title}\n———————————————\n🎯Scopes: {scp}———————————————\n> Platform {platform}\n———————————————\n> Name: {data["name"]}\n———————————————\n> Type {data["type"]}\n———————————————\nURL: {data["url"]}')
         req = requests.get(f"https://api.telegram.org/bot{webhook}/sendmessage?chat_id={chat_id}&text={message}")
-        time.sleep(10)
+        time.sleep(5)
         if req.status_code != 200:
             logger(args.silent,"Cannot send to Telegram check chat_id and Webhook",TYPE="error")
             exit(1)
@@ -99,22 +99,26 @@ def updateProgram(args,mycol,platform,data):
         logger(args.silent,"{}".format(e),TYPE="error")
         exit(1)
 
-def updateScope(args,mycol,platform,data,scopes,Type):
-    try:
-        if Type == "in":
-            logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
-            for scope in scopes:
-                update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
-            push(args,platform,data,scopes,"in")
+def updateScope(args,mycol,platform,data,scopes,Type,old=None):
+    #try:
+    if Type == "in":
+        logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
+        for scope in scopes:
+            update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":str(scope)}})
+        push(args,platform,data,scopes,"in")
 
-        elif Type == "out":
-            logger(args.silent,"Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
-            for scope in scopes:
-                update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":str(scope)}})
-            push(args,platform,data,scopes,"out")
+    elif Type == "out":
+        logger(args.silent,"Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
+        for scope in scopes:
+            if scope in old:
+                old.remove(scope)
+        update = mycol.update_one({"handle":data["handle"]},{"$set":{"in_scope":old}})
+        for scope in scopes:
+            update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":str(scope)}})
+        push(args,platform,data,scopes,"out")
 
-    except Exception as e:
-        logger(args.silent,"{}".format(e),TYPE="error")
+    #except Exception as e:
+    #    logger(args.silent,"{}".format(e),TYPE="error")
         
 def check_old_data(args,platform,Program,mydb):
 
@@ -137,14 +141,17 @@ def check_old_data(args,platform,Program,mydb):
                         new_in_scopes.append(new_in_scope)
                 if new_in_scopes != []:
                     updateScope(args,mycol,platform,data,new_in_scopes,"in")
+                    new_in_scopes = []
                     updated == True
                 for new_out_of_scope in old_inscopes:
-                    if new_out_of_scope not in data["in_scope"] and new_out_of_scope not in data["out_of_scope"]:
+                    if new_out_of_scope not in data["in_scope"]:
                         logger(args.silent,"New out_of_Scope founds! on {} : {}".format(platform,new_out_of_scope),TYPE="success")
                         new_out_of_scopes.append(new_out_of_scope)
                 if new_out_of_scopes != []:
-                    updateScope(args,mycol,platform,data,new_out_of_scopes,"out")
+                    updateScope(args,mycol,platform,data,new_out_of_scopes,"out",old_inscopes)
+                    new_out_of_scopes = []
                     updated == True
+
         if updated == False:
             logger(args.silent,"No changes were found in {}. ".format(platform),TYPE="success")
 
