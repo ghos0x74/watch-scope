@@ -32,3 +32,7 @@ python3 main.py
  ```bash
  python3 main.py -p all --update
  ```
+ if you want to specify the platforms you can use `-p` or `--platform` switches
+```bash
+python3 main.py -p hackerone,bugcrowd --update
+```
