@@ -1,0 +1,2 @@
+*/10 * * * * /usr/local/bin/python /app/main.py >> /var/log/script.log 2>&1
+

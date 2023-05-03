@@ -24,7 +24,7 @@ def logger(silent,message,TYPE):
             print(Fore.LIGHTCYAN_EX+"["+Fore.LIGHTYELLOW_EX+"✓"+Fore.LIGHTCYAN_EX+"] "+Fore.LIGHTCYAN_EX+message+Fore.RESET)
         elif TYPE == "pending":
             print(Fore.LIGHTCYAN_EX+"["+Fore.LIGHTYELLOW_EX+"*"+Fore.LIGHTCYAN_EX+"] "+Fore.LIGHTMAGENTA_EX+message+Fore.RESET)
-    time.sleep(0.30)
+        time.sleep(0.30)
 def listScope(scopes):
     scp = ""
     for s in scopes:
@@ -100,29 +100,29 @@ def updateProgram(args,mycol,platform,data):
         exit(1)
 
 def updateScope(args,mycol,platform,data,scopes,Type,old):
-    #try:
-    if Type == "in":
-        logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
-        for scope in scopes:
-            if scope in old:
-                old.remove(scope)
-        update = mycol.update_one({"handle":data["handle"]},{"$set":{"out_of_scope":old}})
-        for scope in scopes:
-            update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":scope}})
-        push(args,platform,data,scopes,"in")
+    try:
+        if Type == "in":
+            logger(args.silent,"Adding {}'s new in_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
+            for scope in scopes:
+                if scope in old:
+                    old.remove(scope)
+            update = mycol.update_one({"handle":data["handle"]},{"$set":{"out_of_scope":old}})
+            for scope in scopes:
+                update = mycol.update_one({"handle":data["handle"]},{"$push":{"in_scope":scope}})
+            push(args,platform,data,scopes,"in")
 
-    elif Type == "out":
-        logger(args.silent,"Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
-        for scope in scopes:
-            if scope in old:
-                old.remove(scope)
-        update = mycol.update_one({"handle":data["handle"]},{"$set":{"in_scope":old}})
-        for scope in scopes:
-            update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":str(scope)}})
-        push(args,platform,data,scopes,"out")
+        elif Type == "out":
+            logger(args.silent,"Adding {}'s new out_of_scopes [{}] : to Database.".format(data["name"],platform),TYPE="pending")
+            for scope in scopes:
+                if scope in old:
+                    old.remove(scope)
+            update = mycol.update_one({"handle":data["handle"]},{"$set":{"in_scope":old}})
+            for scope in scopes:
+                update = mycol.update_one({"handle":data["handle"]},{"$push":{"out_of_scope":scope}})
+            push(args,platform,data,scopes,"out")
 
-    #except Exception as e:
-    #    logger(args.silent,"{}".format(e),TYPE="error")
+    except Exception as e:
+        logger(args.silent,"{}".format(e),TYPE="error")
         
 def check_old_data(args,platform,Program,mydb):
     try:
@@ -312,7 +312,6 @@ def getPlatforms(args,platform):
         return {platform.name:programs}
 
 def main():
-    
     parser = argparse.ArgumentParser(description='Watch scope')
     parser.add_argument("--silent",action="store_true",help="Turn on Logging.")
     parser.add_argument("--update",action="store_true",help="Update Database.")
@@ -320,7 +319,7 @@ def main():
     parser.add_argument("--discord",action="store_true",help="set sending method to discord")
     parser.add_argument("-w","--webhook",help="telegram(BOT-TOKEN) or discord webhook link")
     parser.add_argument("-id","--chat_id",help="telegram chat_id")
-    parser.add_argument("-p","--platform",help="bugbounty platform names (ex: hackerone,bugcrowd). default: all",default="all",required=True)
+    parser.add_argument("-p","--platform",help="bugbounty platform names (ex: hackerone,bugcrowd). default: all",default="all")
     args = parser.parse_args()
 
     if not len(sys.argv) > 1:

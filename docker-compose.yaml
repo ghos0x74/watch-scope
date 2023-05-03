@@ -1,0 +1,11 @@
+  GNU nano 5.4                                                                     docker-compose.yaml                                                                               
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo:4.4.6
+    restart: always
+  watch-scope:
+    build: .
+    restart: always
