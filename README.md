@@ -12,13 +12,18 @@ cd watch-scope
 pip install -r requirements.txt
  ```
  ## Usage
- ### Method 1 :
+  ### Method 1 (using Docker): 
+  - Note : edit config and crontab file with your own values.
+  ``` bash
+docker-compose up -d
+ ```
+ ### Method 2 :
 Edit config file and Change `Webhook`, `Telegram/Discord` variables with your own values.
 - Note: If you want to use Telegram, change the value of `telegram` to `True` and `discord` to `False` and then change the value of `chat_id` with your own telegram chat-id
 ``` bash
 python3 main.py
  ```
- ### Method 2 :
+ ### Method 3 :
  
  send to Discord
  ```bash
